@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NTPU 學習探索新視界 - 國立臺北大學</title>
+  
+  <!-- 引入 Tailwind CSS 快速排版樣式 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 React 與 ReactDOM (v18) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- 引入 Babel 供瀏覽器直接解析 JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-[#fafbfc] text-slate-800 antialiased selection:bg-rose-100 selection:text-rose-900">
+  <div id="root"></div>
+
+  <!-- React 程式碼主體 -->
+  <script type="text/babel">
+    const { useState, useMemo, useRef } = React;
+
+    // =========================================================================
+    // 1. 內嵌 SVG 圖示元件 (避免外部圖示庫依賴失效)
+    // =========================================================================
+    const Icons = {
+      Search: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      ),
+      BookOpen: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>
+      ),
+      HelpCircle: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      ),
+      Lightbulb: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M9 18h6"></path><path d="M10 22h4"></path>
+          <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
+        </svg>
+      ),
+      ArrowRight: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      ),
+      ArrowDown: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+      ),
+      ChevronRight: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      ),
+      Heart: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+        </svg>
+      ),
+      Menu: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      ),
+      X: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      ),
+      Sparkles: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+        </svg>
+      ),
+      Info: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      ),
+      Upload: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      ),
+      ExternalLink: (props) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      )
+    };
+
+    // =========================================================================
+    // 2. 網站全域設定中心 (siteConfig)
+    // =========================================================================
+    const siteConfig = {
+      siteName: "NTPU 學習探索新視界",
+      englishName: "NTPU Learning Hub",
+      universityName: "國立臺北大學",
+      universityEng: "National Taipei University",
+      bannerTitle: "你的學習，不只有一種可能。",
+      bannerDesc: "從校園出發，串聯各項精選資源，自主規劃專屬學習地圖。",
+
+      navLinks: [
+        { id: "home", title: "首頁", url: "#", enabled: true, isHome: true },
+        { id: "academicQA", title: "教務 QA", pageKey: "academicQA" },
+        { id: "featuredCourses", title: "特色課程", pageKey: "featuredCourses" },
+        { id: "studentProposal", title: "北大・自主提案所", pageKey: "studentProposal" },
+        { id: "about", title: "關於我們", url: "#about-section", enabled: true }
+      ],
+
+      pages: {
+        academicQA: {
+          id: "academicQA",
+          title: "教務 QA",
+          shortDesc: "選課、學分、成績、畢業等常見問題，一次找到答案。",
+          icon: "HelpCircle",
+          themeBg: "bg-gradient-to-b from-[#f0f7ff] to-[#e4f0fe]",
+          themeBorder: "border-[#d0e3ff] hover:border-[#9ac4ff]",
+          iconBg: "bg-blue-600 text-white shadow-blue-200",
+          btnBg: "bg-blue-600 hover:bg-blue-700 text-white",
+          url: "",
+          enabled: false,
+          statusText: "教務 QA 子頁面建置整合中，第一期常見問答即將開放！"
+        },
+        featuredCourses: {
+          id: "featuredCourses",
+          title: "特色課程",
+          shortDesc: "發現有趣的課程，探索不同領域與多元學習方式。",
+          icon: "BookOpen",
+          themeBg: "bg-gradient-to-b from-[#fff1f3] to-[#ffe4e8]",
+          themeBorder: "border-[#ffd3db] hover:border-[#ff9eb2]",
+          iconBg: "bg-rose-500 text-white shadow-rose-200",
+          btnBg: "bg-rose-500 hover:bg-rose-600 text-white",
+          url: "",
+          enabled: false,
+          statusText: "特色課程清單子頁面正在籌劃中，敬請期待！"
+        },
+        studentProposal: {
+          id: "studentProposal",
+          title: "北大・自主提案所",
+          shortDesc: "學生自主學習、自主開課，打造專屬學習計畫。",
+          icon: "Lightbulb",
+          themeBg: "bg-gradient-to-b from-[#fff7ed] to-[#ffedd5]",
+          themeBorder: "border-[#fed7aa] hover:border-[#fb923c]",
+          iconBg: "bg-amber-500 text-white shadow-amber-200",
+          btnBg: "bg-amber-500 hover:bg-amber-600 text-white",
+          url: "",
+          enabled: false,
+          statusText: "北大・自主提案所平台申請系統籌劃中！"
+        }
+      },
+
+      footer: {
+        office: "教務處",
+        address: "237303 新北市三峽區大學路 151 號 行政大樓",
+        phone: "(02) 8674-1111",
+        email: "academic@mail.ntpu.edu.tw",
+        officialLinks: [
+          { name: "國立臺北大學官方網站", url: "https://www.ntpu.edu.tw" },
+          { name: "學生資訊系統", url: "https://sea.cc.ntpu.edu.tw" },
+          { name: "臺北大學課程查詢系統", url: "https://sea.cc.ntpu.edu.tw/pls/eval/class_41.asp" }
+        ]
+      }
+    };
+
+    // 示範資料
+    const mockData = {
+      featuredCourses: [
+        {
+          id: "fc-001",
+          title: "AI與社會創新實作",
+          tags: [
+            { name: "科技賦能", color: "bg-blue-50 text-blue-700 border-blue-200" },
+            { name: "實作體驗", color: "bg-amber-50 text-amber-700 border-amber-200" }
+          ],
+          description: "結合 AI 工具與社會議題，從實作專案中學習解決真實問題。",
+          image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80"
+        },
+        {
+          id: "fc-002",
+          title: "地方創生與社會實踐",
+          tags: [
+            { name: "社會共好", color: "bg-rose-50 text-rose-700 border-rose-200" },
+            { name: "永續職能", color: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+          ],
+          description: "走入社區，透過田野調查與實作方案，建立在地連結，實踐社會參與。",
+          image: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=700&q=80"
+        },
+        {
+          id: "fc-003",
+          title: "跨域設計思考",
+          tags: [
+            { name: "跨域創新", color: "bg-purple-50 text-purple-700 border-purple-200" },
+            { name: "實作體驗", color: "bg-amber-50 text-amber-700 border-amber-200" }
+          ],
+          description: "結合不同領域的知識與方法，培養創新思維與團隊合作能力。",
+          image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=700&q=80"
+        },
+        {
+          id: "fc-004",
+          title: "國際移動與全球視野",
+          tags: [
+            { name: "自主探索", color: "bg-teal-50 text-teal-700 border-teal-200" },
+            { name: "國際視野", color: "bg-sky-50 text-sky-700 border-sky-200" }
+          ],
+          description: "透過國際交流與海外學習，拓展全球視野，培養跨文化溝通能力。",
+          image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=700&q=80"
+        }
+      ],
+      academicQASamples: [
+        { q: "忘記選課怎麼辦？", desc: "可在加退選期間內登入選課系統補選，或依各系所規定辦理人工加簽作業。" },
+        { q: "如何查詢畢業學分是否足夠？", desc: "請登入學生資訊系統的「畢業學分檢核」功能，系統將自動比對必選修與通識學分。" },
+        { q: "想修其他系的課，要注意什麼？", desc: "須留意該課程是否開放外系選修、是否有擋修規定，以及是否承認為外系選修學分。" },
+        { q: "自主學習可以抵免學分嗎？", desc: "自主提案通過審查並完成成果發表後，可依微學分或自主學習辦法申請對應學分認證。" }
+      ],
+      hotKeywords: ["AI", "自主學習", "特色課程", "跨校修課", "社區實踐", "國際交流", "專案施作"]
+    };
+
+    // =========================================================================
+    // 3. 校徽向量標誌元件
+    // =========================================================================
+    const NtpuOfficialLogo = () => (
+      <div className="flex items-center space-x-3 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+        <div className="relative w-11 h-11 flex-shrink-0 flex items-center justify-center">
+          <svg viewBox="0 0 44 44" className="w-11 h-11" fill="none">
+            <circle cx="22" cy="22" r="21" fill="#FFFFFF" stroke="#0284c7" strokeWidth="1.5" />
+            <circle cx="22" cy="22" r="18.5" stroke="#E2E8F0" strokeWidth="0.8" />
+            <path d="M12 30C15 21 24 15 31 12C28 21 19 27 12 30Z" fill="#0284c7" />
+            <path d="M15 30C18 23 25 18 32 16C29 23 22 28 15 30Z" fill="#0d9488" opacity="0.9" />
+            <path d="M18 31C21 25 26 21 33 20C30 25 25 29 18 31Z" fill="#ea580c" opacity="0.9" />
+          </svg>
+        </div>
+        <div className="flex flex-col text-left">
+          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug">
+            {siteConfig.universityName}
+          </span>
+          <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+            {siteConfig.universityEng}
+          </span>
+        </div>
+      </div>
+    );
+
+    // =========================================================================
+    // 4. 水彩橫幅主視覺元件 (寬幅橫式設計)
+    // =========================================================================
+    const CampusWatercolorArtwork = ({ customImageUrl, onUploadClick }) => {
+      const [imgFailed, setImgFailed] = useState(false);
+      const displayUrl = customImageUrl || "/images/hero-campus.png";
+
+      return (
+        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[380px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-gradient-to-tr from-sky-50 via-amber-50 to-pink-50 group">
+          {!imgFailed ? (
+            <img
+              src={displayUrl}
+              alt="臺北大學三峽校區"
+              onError={() => setImgFailed(true)}
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
+          ) : (
+            /* 純向量備援水彩插圖 (永不破圖) */
+            <svg viewBox="0 0 800 450" className="w-full h-full object-cover" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="watercolorSky" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.45" />
+                  <stop offset="40%" stopColor="#fef08a" stopOpacity="0.3" />
+                  <stop offset="70%" stopColor="#fbcfe8" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#ddd6fe" stopOpacity="0.4" />
+                </linearGradient>
+                <linearGradient id="brickWall" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#c2410c" />
+                  <stop offset="50%" stopColor="#ea580c" />
+                  <stop offset="100%" stopColor="#b45309" />
+                </linearGradient>
+              </defs>
+
+              <rect width="800" height="450" fill="url(#watercolorSky)" />
+              <circle cx="160" cy="90" r="110" fill="#bae6fd" opacity="0.35" filter="blur(18px)" />
+              <circle cx="340" cy="110" r="90" fill="#fef08a" opacity="0.4" filter="blur(16px)" />
+              <circle cx="480" cy="70" r="120" fill="#fbcfe8" opacity="0.35" filter="blur(20px)" />
+
+              {/* 翱翔紙飛機 */}
+              <g transform="translate(240, 95) rotate(-18)">
+                <polygon points="0,0 28,14 12,18" fill="#38bdf8" opacity="0.85" />
+                <polygon points="28,14 12,18 10,25" fill="#0284c7" opacity="0.8" />
+              </g>
+
+              {/* 右側：行政教學大樓 */}
+              <g transform="translate(620, 65)">
+                <rect x="0" y="0" width="160" height="340" fill="url(#brickWall)" rx="4" />
+                <polygon points="0,0 80,-30 160,0" fill="#9a3412" />
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((floor) => (
+                  <g key={floor} transform={`translate(0, ${floor * 38 + 20})`}>
+                    <rect x="-8" y="0" width="176" height="6" fill="#f8fafc" opacity="0.95" />
+                    <rect x="12" y="10" width="28" height="18" fill="#1e293b" opacity="0.75" rx="1" />
+                    <rect x="52" y="10" width="28" height="18" fill="#1e293b" opacity="0.75" rx="1" />
+                    <rect x="92" y="10" width="28" height="18" fill="#1e293b" opacity="0.75" rx="1" />
+                  </g>
+                ))}
+              </g>
+
+              {/* 前方主體：經典三峽校門紅磚雙拱門 */}
+              <g transform="translate(480, 205)">
+                <path d="M-15,18 Q80,-12 175,18 L165,30 Q80,4 0,30 Z" fill="#94a3b8" />
+                <line x1="20" y1="28" x2="40" y2="60" stroke="#64748b" strokeWidth="4" />
+                <line x1="60" y1="25" x2="70" y2="60" stroke="#64748b" strokeWidth="4" />
+                <line x1="100" y1="25" x2="90" y2="60" stroke="#64748b" strokeWidth="4" />
+                <rect x="0" y="60" width="160" height="170" fill="url(#brickWall)" rx="2" />
+                <path d="M15,230 L15,135 Q45,95 75,135 L75,230 Z" fill="#f1f5f9" />
+                <path d="M85,230 L85,150 Q115,115 145,150 L145,230 Z" fill="#f1f5f9" />
+                <rect x="22" y="80" width="116" height="24" fill="#7c2d12" rx="3" />
+                <text x="80" y="96" fill="#fef08a" fontSize="12" fontWeight="900" textAnchor="middle" letterSpacing="2">
+                  國立臺北大學
+                </text>
+              </g>
+
+              {/* 左側：探索學生群像 */}
+              <g transform="translate(50, 180)">
+                <g transform="translate(30, 25)">
+                  <circle cx="45" cy="40" r="26" fill="#fbcfe8" />
+                  <path d="M22,35 C20,15 50,10 65,22 C68,35 60,45 60,45 Z" fill="#1e293b" />
+                  <path d="M15,65 L75,65 L82,160 L8,160 Z" fill="#3b82f6" rx="6" />
+                </g>
+                <g transform="translate(90, 50)">
+                  <circle cx="50" cy="40" r="27" fill="#fed7aa" />
+                  <path d="M25,35 C20,10 65,5 78,25 C82,50 75,70 75,70 L25,70 Z" fill="#451a03" />
+                  <path d="M20,68 Q50,60 80,68 L88,170 L12,170 Z" fill="#0284c7" />
+                  <rect x="42" y="88" width="46" height="58" rx="4" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2" transform="rotate(-8 42 88)" />
+                </g>
+              </g>
+            </svg>
+          )}
+
+          {/* 浮動更換照片按鈕 */}
+          <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2">
+            <button
+              onClick={onUploadClick}
+              className="px-3 py-1.5 bg-white/90 hover:bg-white text-slate-700 hover:text-blue-600 rounded-full text-xs font-bold shadow-md backdrop-blur-md border border-slate-200/80 transition flex items-center gap-1.5 cursor-pointer"
+              title="切換或載入本機圖片"
+            >
+              <Icons.Upload className="w-3.5 h-3.5" />
+              <span>載入圖片檔</span>
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // =========================================================================
+    // 5. 主應用程式元件
+    // =========================================================================
+    function App() {
+      const [searchQuery, setSearchQuery] = useState("");
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      const [favorites, setFavorites] = useState({});
+      const [customImage, setCustomImage] = useState(null);
+      const [modalInfo, setModalInfo] = useState({ isOpen: false, title: "", message: "" });
+      const fileInputRef = useRef(null);
+
+      // 安全跳轉控制
+      const handlePageNavigation = (pageKeyOrCustomUrl, defaultTitle = "專區") => {
+        if (!pageKeyOrCustomUrl) return;
+
+        if (siteConfig.pages[pageKeyOrCustomUrl]) {
+          const page = siteConfig.pages[pageKeyOrCustomUrl];
+          if (page.enabled && page.url && page.url.trim() !== "") {
+            window.location.href = page.url;
+          } else {
+            setModalInfo({
+              isOpen: true,
+              title: `「${page.title}」專區籌備中`,
+              message: page.statusText || "該子頁面正在整備第一期資料與服務，完成後將於第一時間公告開放，感謝你的支持！"
+            });
+          }
+          return;
+        }
+
+        if (typeof pageKeyOrCustomUrl === "string" && pageKeyOrCustomUrl.startsWith("http")) {
+          window.open(pageKeyOrCustomUrl, "_blank", "noopener,noreferrer");
+        } else {
+          setModalInfo({
+            isOpen: true,
+            title: `「${defaultTitle}」即將推出`,
+            message: "此功能正在整備中，如有各項課程或提案疑問，歡迎洽詢教務處。"
+          });
+        }
+      };
+
+      const toggleFavorite = (courseId) => {
+        setFavorites((prev) => ({ ...prev, [courseId]: !prev[courseId] }));
+      };
+
+      const scrollToId = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      };
+
+      const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setCustomImage(url);
+        }
+      };
+
+      // 即時關鍵字搜尋過濾
+      const searchFilter = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return null;
+
+        const matchedCourses = mockData.featuredCourses.filter(
+          (c) =>
+            c.title.toLowerCase().includes(q) ||
+            c.description.toLowerCase().includes(q) ||
+            c.tags.some((t) => t.name.toLowerCase().includes(q))
+        );
+
+        const matchedQA = mockData.academicQASamples.filter(
+          (item) => item.q.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
+        );
+
+        return {
+          courses: matchedCourses,
+          qa: matchedQA,
+          totalCount: matchedCourses.length + matchedQA.length
+        };
+      }, [searchQuery]);
+
+      const favCount = Object.values(favorites).filter(Boolean).length;
+
+      return (
+        <div className="min-h-screen bg-[#fafbfc] text-slate-800 flex flex-col font-sans antialiased">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+
+          {/* 彈出提示視窗 */}
+          {modalInfo.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icons.Info className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{modalInfo.title}</h3>
+                <p className="text-slate-600 text-sm leading-relaxed mb-6">{modalInfo.message}</p>
+                <button
+                  onClick={() => setModalInfo({ isOpen: false, title: "", message: "" })}
+                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-sm cursor-pointer"
+                >
+                  我知道了
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 區塊 1：頁首導覽列 */}
+          <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+              <NtpuOfficialLogo />
+
+              {/* 桌面端選單 */}
+              <nav className="hidden lg:flex items-center space-x-2">
+                {siteConfig.navLinks.map((item) => {
+                  if (item.isHome) {
+                    return (
+                      <span key={item.id} className="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-full shadow-xs">
+                        {item.title}
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (item.pageKey) {
+                          handlePageNavigation(item.pageKey, item.title);
+                        } else if (item.url) {
+                          scrollToId(item.url.replace("#", ""));
+                        }
+                      }}
+                      className="px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition cursor-pointer"
+                    >
+                      {item.title}
+                    </button>
+                  );
+                })}
+
+                <div className="h-5 w-px bg-slate-200 mx-2" />
+
+                <button
+                  onClick={() =>
+                    setModalInfo({
+                      isOpen: true,
+                      title: "我的收藏課程",
+                      message: `您目前已暫存收藏 ${favCount} 門特色課程。正式登入後將與學生個人課表同步整合！`
+                    })
+                  }
+                  className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-full transition relative cursor-pointer"
+                  title="我的收藏清單"
+                >
+                  <Icons.Heart className={`w-5 h-5 ${favCount > 0 ? "text-rose-500 fill-rose-500" : ""}`} />
+                  {favCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                      {favCount}
+                    </span>
+                  )}
+                </button>
+              </nav>
+
+              {/* 行動端按鈕 */}
+              <div className="flex items-center space-x-1 lg:hidden">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  {mobileMenuOpen ? <Icons.X className="w-6 h-6" /> : <Icons.Menu className="w-6 h-6" />}
+                </button>
+              </div>
+            </div>
+
+            {/* 行動端選單展開 */}
+            {mobileMenuOpen && (
+              <div className="lg:hidden border-t border-slate-100 bg-white px-4 pt-3 pb-6 space-y-1.5 shadow-xl animate-fade-in">
+                <div className="px-3.5 py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-lg">
+                  首頁 (目前位置)
+                </div>
+                {siteConfig.navLinks.filter((n) => !n.isHome).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (item.pageKey) {
+                        handlePageNavigation(item.pageKey, item.title);
+                      } else if (item.url) {
+                        scrollToId(item.url.replace("#", ""));
+                      }
+                    }}
+                    className="w-full text-left px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center justify-between"
+                  >
+                    <span>{item.title}</span>
+                    <Icons.ChevronRight className="w-4 h-4 text-slate-400" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </header>
+
+          {/* 主要內容 */}
+          <main className="grow">
+            {/* 區塊 2：Hero 主視覺 */}
+            <section className="relative overflow-hidden bg-white border-b border-slate-100 py-12 lg:py-16">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+                  {/* 左側文案與搜尋 */}
+                  <div className="lg:col-span-7 space-y-5 text-left">
+                    <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold tracking-wide border border-slate-200/60 shadow-xs">
+                      <Icons.Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{siteConfig.englishName}</span>
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+                      <span className="bg-gradient-to-r from-[#e11d48] via-[#ea580c] via-[#8b5cf6] to-[#0284c7] bg-clip-text text-transparent">
+                        {siteConfig.siteName}
+                      </span>
+                    </h1>
+
+                    <div className="space-y-1">
+                      <p className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                        跨出課堂，發現更多可能
+                      </p>
+                      <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-xl">
+                        從特色課程、自主學習到社會與國際資源，開啟你的專屬學習旅程。
+                      </p>
+                    </div>
+
+                    {/* 搜尋列 */}
+                    <div className="w-full pt-2">
+                      <div className="relative flex items-center shadow-md rounded-full bg-white border border-slate-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition p-1.5">
+                        <Icons.Search className="w-5 h-5 text-slate-400 ml-3.5 shrink-0" />
+                        <input
+                          id="hero-search-input"
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="搜尋課程、學習資源或教務問題……"
+                          className="w-full px-3 py-2 text-sm sm:text-base text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="p-1 mr-1 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                          >
+                            <Icons.X className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (!searchQuery.trim()) {
+                              handlePageNavigation(null, "即時檢索系統");
+                            } else {
+                              scrollToId("featured-courses");
+                            }
+                          }}
+                          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full transition shadow-xs shrink-0 cursor-pointer"
+                        >
+                          搜尋
+                        </button>
+                      </div>
+
+                      {/* 即時反饋搜尋卡片 */}
+                      {searchFilter && (
+                        <div className="mt-3.5 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 text-left divide-y divide-slate-100 max-h-80 overflow-y-auto animate-fade-in">
+                          <div className="pb-2 flex justify-between items-center text-xs text-slate-400">
+                            <span>共找到 {searchFilter.totalCount} 筆相關示範資訊</span>
+                            <span className="text-blue-600 font-bold">即時篩選中</span>
+                          </div>
+                          {searchFilter.totalCount === 0 ? (
+                            <div className="py-6 text-center text-slate-400 text-sm">
+                              查無「{searchQuery}」相關結果，請嘗試點選下方熱門標籤。
+                            </div>
+                          ) : (
+                            <>
+                              {searchFilter.courses.length > 0 && (
+                                <div className="py-2">
+                                  <span className="text-[11px] font-bold text-slate-400 block mb-1">特色課程</span>
+                                  {searchFilter.courses.map((c) => (
+                                    <div
+                                      key={c.id}
+                                      onClick={() => handlePageNavigation("featuredCourses", c.title)}
+                                      className="p-2 hover:bg-blue-50/70 rounded-lg cursor-pointer transition flex items-center justify-between"
+                                    >
+                                      <div>
+                                        <div className="font-semibold text-slate-800 text-sm">{c.title}</div>
+                                        <div className="text-xs text-slate-500 line-clamp-1">{c.description}</div>
+                                      </div>
+                                      <Icons.ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {searchFilter.qa.length > 0 && (
+                                <div className="py-2">
+                                  <span className="text-[11px] font-bold text-slate-400 block mb-1">教務問答</span>
+                                  {searchFilter.qa.map((qa, idx) => (
+                                    <div
+                                      key={idx}
+                                      onClick={() => handlePageNavigation("academicQA", qa.q)}
+                                      className="p-2 hover:bg-blue-50/70 rounded-lg cursor-pointer transition"
+                                    >
+                                      <div className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-bold">Q</span>
+                                        <span>{qa.q}</span>
+                                      </div>
+                                      <div className="text-xs text-slate-500 mt-1 pl-4 line-clamp-1">{qa.desc}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 熱門關鍵字標籤 */}
+                      <div className="mt-3.5 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-slate-500 font-semibold">熱門搜尋：</span>
+                        {mockData.hotKeywords.map((kw) => (
+                          <button
+                            key={kw}
+                            onClick={() => {
+                              setSearchQuery(kw);
+                              const el = document.getElementById("hero-search-input");
+                              if (el) el.focus();
+                            }}
+                            className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition cursor-pointer"
+                          >
+                            {kw}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 右側水彩風格橫幅相片 */}
+                  <div className="lg:col-span-5 flex justify-center">
+                    <CampusWatercolorArtwork
+                      customImageUrl={customImage}
+                      onUploadClick={() => fileInputRef.current?.click()}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 區塊 3：三大專區入口 (粉彩微漸層引言橫幅 + 向下引導按鈕) */}
+            <section id="portals-section" className="py-12 bg-white border-b border-slate-100">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                {/* 置頂橫幅：粉彩漸層底色 + 深色高對比文字 + 向下箭號 */}
+                <div className="rounded-3xl p-6 sm:p-9 bg-gradient-to-r from-[#ffe4e6] via-[#fef3c7] via-[#ede9fe] to-[#e0e7ff] border border-white/80 shadow-md flex flex-col md:flex-row items-center justify-between gap-5">
+                  <div className="space-y-1.5 text-center md:text-left max-w-2xl">
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                      {siteConfig.bannerTitle}
+                    </h2>
+                    <p className="text-xs sm:text-base text-slate-700 font-medium leading-relaxed">
+                      {siteConfig.bannerDesc}
+                    </p>
+                  </div>
+
+                  {/* 向下引導按鈕 */}
+                  <button
+                    onClick={() => scrollToId("learning-cards-grid")}
+                    className="shrink-0 inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-slate-200/80 shadow-xs hover:shadow-md transition cursor-pointer group"
+                  >
+                    <span className="text-xs sm:text-sm font-bold text-slate-900">
+                      探索學習資源入口
+                    </span>
+                    <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:translate-y-1 transition-transform">
+                      <Icons.ArrowDown className="w-3.5 h-3.5" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* 三大入口卡片 */}
+                <div id="learning-cards-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-mt-24">
+                  {Object.keys(siteConfig.pages).map((key) => {
+                    const item = siteConfig.pages[key];
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex flex-col justify-between items-center text-center rounded-3xl p-8 border transition-all duration-300 shadow-xs hover:shadow-lg hover:-translate-y-1 ${item.themeBg} ${item.themeBorder}`}
+                      >
+                        <div className="flex flex-col items-center w-full">
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 shadow-sm ${item.iconBg}`}>
+                            {item.icon === "HelpCircle" && <Icons.HelpCircle className="w-8 h-8" />}
+                            {item.icon === "BookOpen" && <Icons.BookOpen className="w-8 h-8" />}
+                            {item.icon === "Lightbulb" && <Icons.Lightbulb className="w-8 h-8" />}
+                          </div>
+
+                          <h3 className="text-xl font-bold text-slate-900 mb-2.5">{item.title}</h3>
+                          <p className="text-sm text-slate-600 leading-relaxed mb-6">{item.shortDesc}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handlePageNavigation(item.id, item.title)}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-md hover:scale-105 cursor-pointer ${item.btnBg}`}
+                          title={`進入${item.title}`}
+                        >
+                          <Icons.ArrowRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* 區塊 4：精選特色課程 */}
+            <section id="featured-courses" className="py-12 sm:py-16 bg-[#fafbfc] border-b border-slate-200/60">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-6 h-6 text-amber-500 fill-amber-400" viewBox="0 0 24 24">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                      <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                        精選特色課程
+                      </h2>
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      跨域學習、實作體驗、社會參與，發現更多學習可能。
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handlePageNavigation("featuredCourses", "特色課程")}
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-bold transition shrink-0 cursor-pointer"
+                  >
+                    <span>查看更多課程</span>
+                    <Icons.ChevronRight className="w-4 h-4 ml-0.5" />
+                  </button>
+                </div>
+
+                {/* 四門課程卡片 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {mockData.featuredCourses.map((course) => {
+                    const isFav = !!favorites[course.id];
+                    const isMatch = searchFilter
+                      ? searchFilter.courses.some((c) => c.id === course.id)
+                      : true;
+
+                    return (
+                      <div
+                        key={course.id}
+                        className={`bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group ${
+                          !isMatch ? "opacity-35" : "opacity-100"
+                        }`}
+                      >
+                        <div>
+                          <div className="relative h-44 overflow-hidden bg-slate-100">
+                            <img
+                              src={course.image}
+                              alt={course.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                              loading="lazy"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => toggleFavorite(course.id)}
+                              className={`absolute top-3 right-3 p-1.5 rounded-full backdrop-blur-md transition cursor-pointer ${
+                                isFav ? "bg-rose-500 text-white" : "bg-white/80 hover:bg-white text-slate-600 hover:text-rose-500"
+                              }`}
+                            >
+                              <Icons.Heart className={`w-4 h-4 ${isFav ? "fill-white" : ""}`} />
+                            </button>
+                          </div>
+
+                          <div className="p-5 pb-2">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                              {course.tags.map((t, idx) => (
+                                <span key={idx} className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${t.color}`}>
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition mb-2">
+                              {course.title}
+                            </h3>
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-2">
+                              {course.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="px-5 pb-5 pt-2 flex items-center justify-end border-t border-slate-100 mt-2">
+                          <button
+                            onClick={() => handlePageNavigation("featuredCourses", course.title)}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                          >
+                            <span>查看課程</span>
+                            <Icons.ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          </main>
+
+          {/* 區塊 5：頁尾 */}
+          <footer id="about-section" className="bg-slate-900 text-slate-300 pt-12 pb-8 border-t border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-10 border-b border-slate-800 text-xs sm:text-sm">
+                <div className="space-y-3">
+                  <div className="text-base font-black text-white tracking-wide">{siteConfig.universityName}</div>
+                  <div className="text-sm font-bold text-blue-400">{siteConfig.siteName}</div>
+                  <p className="text-slate-400 text-xs leading-relaxed max-w-xs">
+                    整合教務 QA、精選特色課群與學生自主提案，提供北大學子跨域探索的專屬學習旅程。
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="font-bold text-white tracking-wide text-xs uppercase">教務處聯絡資訊</div>
+                  <ul className="space-y-1.5 text-xs text-slate-400">
+                    <li>主辦單位：{siteConfig.footer.office}</li>
+                    <li>地址：{siteConfig.footer.address}</li>
+                    <li>電話：{siteConfig.footer.phone}</li>
+                    <li>電子郵件：{siteConfig.footer.email}</li>
+                    <li className="text-slate-500 italic">服務時間：週一至週五 08:30 - 17:00</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="font-bold text-white tracking-wide text-xs uppercase">常用系統連結</div>
+                  <ul className="space-y-2 text-xs">
+                    {siteConfig.footer.officialLinks.map((link, i) => (
+                      <li key={i}>
+                        <a href={link.url} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-400 transition flex items-center gap-1.5">
+                          <span>{link.name}</span>
+                          <Icons.ExternalLink className="w-3 h-3 text-slate-500" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="font-bold text-white tracking-wide text-xs uppercase">網站規範與隱私宣告</div>
+                  <ul className="space-y-2 text-xs">
+                    <li>
+                      <button
+                        onClick={() =>
+                          setModalInfo({
+                            isOpen: true,
+                            title: "個人資料保護專區",
+                            message: "本平台遵守個人資料保護法規定，使用者所登錄或留存之個人資料僅供校務學習探索與分析使用。"
+                          })
+                        }
+                        className="text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                      >
+                        個人資料保護說明
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() =>
+                          setModalInfo({
+                            isOpen: true,
+                            title: "網站使用說明及著作權聲明",
+                            message: "國立臺北大學版權所有，未經授權禁止商業轉載或改作。"
+                          })
+                        }
+                        className="text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                      >
+                        網站使用說明與著作權
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
+                <div>© {new Date().getFullYear()} {siteConfig.universityName} {siteConfig.englishName}. All Rights Reserved.</div>
+                <div className="flex items-center gap-3">
+                  <span>繁體中文 (台灣)</span>
+                  <span>•</span>
+                  <span>教務處建置維護</span>
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // 渲染至 HTML 根節點
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
